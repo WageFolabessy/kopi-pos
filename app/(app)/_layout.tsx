@@ -61,8 +61,12 @@ export default function AppLayout() {
       <Tabs.Screen
         name="inventory"
         options={{
-          title: "Inventaris",
-          tabBarIcon: ({ color }) => <TabBarIcon name="list-alt" color={color} />,
+          title: "Inventori",
+          headerTitleAlign: "center",
+          headerShown: true,
+          tabBarIcon: ({ color }) => (
+            <TabBarIcon name="archive" color={color} />
+          ),
           href: userRole === "Pemilik" ? "/inventory" : null,
         }}
       />
