@@ -62,8 +62,6 @@ export default function AppLayout() {
         name="inventory"
         options={{
           title: "Inventori",
-          headerTitleAlign: "center",
-          headerShown: true,
           tabBarIcon: ({ color }) => (
             <TabBarIcon name="archive" color={color} />
           ),

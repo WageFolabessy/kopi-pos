@@ -1,6 +1,6 @@
 import { Stack, useRouter, useSegments } from "expo-router";
 import React, { useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, StatusBar, View } from "react-native";
 import { AuthProvider, useAuth } from "../src/store/AuthContext";
 
 const InitialLayout = () => {
@@ -42,8 +42,11 @@ const InitialLayout = () => {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <InitialLayout />
-    </AuthProvider>
+    <>
+      <StatusBar hidden={true} />
+      <AuthProvider>
+        <InitialLayout />
+      </AuthProvider>
+    </>
   );
 }

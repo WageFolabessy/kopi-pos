@@ -1,20 +1,13 @@
 import { Stack } from "expo-router";
 import React from "react";
 
-export default function ProductsLayout() {
+export default function CashierLayout() {
   return (
     <Stack>
       <Stack.Screen
         name="index"
         options={{
-          title: "Produk",
-          headerTitleAlign: "center"
-        }}
-      />
-      <Stack.Screen
-        name="form"
-        options={{
-          presentation: "modal",
+          title: "Kasir",
           headerTitleAlign: "center",
         }}
       />
