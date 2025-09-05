@@ -47,6 +47,7 @@ const LoginScreen: React.FC = () => {
         placeholder="Password"
         value={password}
         onChangeText={setPassword}
+        autoCapitalize="none"
         secureTextEntry
       />
       <View style={styles.buttonContainer}>
