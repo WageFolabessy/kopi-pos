@@ -1,0 +1,71 @@
+import { FontAwesome } from "@expo/vector-icons";
+import { Redirect, Tabs } from "expo-router";
+import React from "react";
+import { ActivityIndicator, View } from "react-native";
+import { useAuth } from "../../src/store/AuthContext";
+
+const TabBarIcon = (props: {
+  name: React.ComponentProps<typeof FontAwesome>["name"];
+  color: string;
+}) => {
+  return <FontAwesome size={24} style={{ marginBottom: -3 }} {...props} />;
+};
+
+export default function AppLayout() {
+  const { userRole, loading, user } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (!user) {
+    return <Redirect href="/login" />;
+  }
+
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: "#1e90ff",
+        tabBarInactiveTintColor: "gray",
+        tabBarStyle: userRole === "Kasir" ? { display: "none" } : undefined,
+      }}
+    >
+      <Tabs.Screen
+        name="dashboard"
+        options={{
+          title: "Dashboard",
+          tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
+          href: userRole === "Pemilik" ? "/dashboard" : null,
+        }}
+      />
+      <Tabs.Screen
+        name="cashier"
+        options={{
+          title: "Kasir",
+          tabBarIcon: ({ color }) => <TabBarIcon name="money" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="products"
+        options={{
+          title: "Produk",
+          tabBarIcon: ({ color }) => <TabBarIcon name="inbox" color={color} />,
+          href: userRole === "Pemilik" ? "/products" : null,
+        }}
+      />
+      <Tabs.Screen
+        name="inventory"
+        options={{
+          title: "Inventaris",
+          tabBarIcon: ({ color }) => <TabBarIcon name="list-alt" color={color} />,
+          href: userRole === "Pemilik" ? "/inventory" : null,
+        }}
+      />
+    </Tabs>
+  );
+}
