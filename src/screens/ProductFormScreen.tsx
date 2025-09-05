@@ -18,8 +18,9 @@ import {
   View,
 } from 'react-native';
 import { db } from '../api/firebase';
+import { getIngredients } from '../api/inventory';
 import { addProduct, updateProduct, uploadImage } from '../api/products';
-import { Modifier, Product, Variant } from '../types';
+import { Ingredient, Modifier, Product, RecipeItem, Variant } from '../types';
 
 // --- Helper Component for Variant/Modifier Input ---
 interface OptionInputProps {
@@ -65,37 +66,78 @@ const OptionInput: React.FC<OptionInputProps> = ({ title, onAdd }) => {
   );
 };
 
+// --- Helper Component for Recipe Input ---
+interface RecipeInputProps {
+  ingredients: Ingredient[];
+  onAdd: (ingredientId: string, quantity: number) => void;
+}
+const RecipeInput: React.FC<RecipeInputProps> = ({ ingredients, onAdd }) => {
+  const [selectedIngredient, setSelectedIngredient] = useState<string | undefined>(ingredients[0]?.id);
+  const [quantity, setQuantity] = useState('');
+
+  // Update selected ingredient if the list changes and nothing is selected
+  useEffect(() => {
+    if (!selectedIngredient && ingredients.length > 0) {
+      setSelectedIngredient(ingredients[0].id);
+    }
+  }, [ingredients]);
+
+  const handleAdd = () => {
+    const quantityNum = parseFloat(quantity);
+    if (selectedIngredient && !isNaN(quantityNum) && quantityNum > 0) {
+      onAdd(selectedIngredient, quantityNum);
+      setQuantity('');
+    } else {
+      Alert.alert('Error', 'Pilih bahan dan masukkan jumlah yang valid.');
+    }
+  };
+
+  return(
+    <View style={styles.recipeInputContainer}>
+      <View style={styles.recipePickerWrapper}>
+        <Picker
+          selectedValue={selectedIngredient}
+          onValueChange={(itemValue) => setSelectedIngredient(itemValue)}
+        >
+          {ingredients.map(ing => <Picker.Item key={ing.id} label={ing.name} value={ing.id} />)}
+        </Picker>
+      </View>
+      <TextInput
+        style={styles.recipeQuantityInput}
+        placeholder="Jumlah"
+        value={quantity}
+        onChangeText={setQuantity}
+        keyboardType="numeric"
+      />
+      <TouchableOpacity style={styles.optionAddButton} onPress={handleAdd}>
+        <FontAwesome name="plus" size={16} color="white" />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 // --- Main ProductFormScreen Component ---
 const ProductFormScreen: React.FC = () => {
   const router = useRouter();
   const params = useLocalSearchParams<{ productId?: string }>();
   const isEditing = !!params.productId;
 
-  // Product States
+  // States
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState<'Kopi' | 'Non-Kopi' | 'Makanan'>('Kopi');
   const [imageUri, setImageUri] = useState<string | null>(null);
-  
-  // Variant & Modifier States
   const [variants, setVariants] = useState<Variant[]>([]);
   const [modifiers, setModifiers] = useState<Modifier[]>([]);
-
-  // Loading States
+  const [recipe, setRecipe] = useState<RecipeItem[]>([]);
+  const [availableIngredients, setAvailableIngredients] = useState<Ingredient[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
-  // --- Functions ---
-  const resetForm = () => {
-    setName('');
-    setPrice('');
-    setCategory('Kopi');
-    setImageUri(null);
-    setVariants([]);
-    setModifiers([]);
-  };
-
+  // Fetch data
   useEffect(() => {
+    const unsubscribeIngredients = getIngredients(setAvailableIngredients);
+
     const fetchProductData = async () => {
       setInitialLoading(true);
       if (params.productId) {
@@ -109,18 +151,23 @@ const ProductFormScreen: React.FC = () => {
           setImageUri(productData.imageUrl || null);
           setVariants(productData.variants || []);
           setModifiers(productData.modifiers || []);
+          setRecipe(productData.recipe || []);
         }
       } else {
-        resetForm();
+        setName(''); setPrice(''); setCategory('Kopi'); setImageUri(null);
+        setVariants([]); setModifiers([]); setRecipe([]);
       }
       setInitialLoading(false);
     };
+
     fetchProductData();
+    
+    return () => unsubscribeIngredients();
   }, [params.productId]);
   
   const handleImagePick = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'images',
+      mediaTypes: "images",
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
@@ -157,6 +204,7 @@ const ProductFormScreen: React.FC = () => {
         imageUrl: uploadedImageUrl,
         variants,
         modifiers,
+        recipe,
       };
 
       if (isEditing && params.productId) {
@@ -175,7 +223,23 @@ const ProductFormScreen: React.FC = () => {
     }
   };
 
-  // --- Render ---
+  const handleAddIngredientToRecipe = (ingredientId: string, quantity: number) => {
+    const ingredient = availableIngredients.find(i => i.id === ingredientId);
+    if (ingredient && quantity > 0) {
+      if (recipe.some(item => item.ingredientId === ingredientId)) {
+        Alert.alert('Info', 'Bahan ini sudah ada di dalam resep.');
+        return;
+      }
+      const newRecipeItem: RecipeItem = {
+        ingredientId: ingredient.id!,
+        ingredientName: ingredient.name,
+        quantity,
+        unit: ingredient.unit,
+      };
+      setRecipe([...recipe, newRecipeItem]);
+    }
+  };
+
   if (initialLoading) {
     return <ActivityIndicator size="large" style={{ flex: 1, justifyContent: 'center' }} />;
   }
@@ -195,13 +259,10 @@ const ProductFormScreen: React.FC = () => {
                 </View>
               )}
             </TouchableOpacity>
-
             <Text style={styles.label}>Nama Produk</Text>
             <TextInput style={styles.input} value={name} onChangeText={setName} />
-            
             <Text style={styles.label}>Harga Dasar</Text>
             <TextInput style={styles.input} value={price} onChangeText={setPrice} keyboardType="numeric" />
-            
             <Text style={styles.label}>Kategori</Text>
             <View style={styles.pickerContainer}>
               <Picker selectedValue={category} onValueChange={(itemValue) => setCategory(itemValue)}>
@@ -212,7 +273,6 @@ const ProductFormScreen: React.FC = () => {
             </View>
         </View>
 
-        {/* --- Variants Section --- */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Varian (Contoh: Panas, Dingin)</Text>
           {variants.map((variant, index) => (
@@ -226,7 +286,6 @@ const ProductFormScreen: React.FC = () => {
           <OptionInput title="Varian" onAdd={(name, price) => setVariants([...variants, { name, priceAdjustment: price }])} />
         </View>
 
-        {/* --- Modifiers Section --- */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Modifier (Contoh: Extra Shot)</Text>
           {modifiers.map((modifier, index) => (
@@ -240,7 +299,22 @@ const ProductFormScreen: React.FC = () => {
           <OptionInput title="Modifier" onAdd={(name, price) => setModifiers([...modifiers, { name, priceAdjustment: price }])} />
         </View>
 
-        {/* --- Submit Button --- */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Resep (Bahan Baku)</Text>
+          {recipe.map((item, index) => (
+            <View key={index} style={styles.optionItem}>
+              <Text>{item.ingredientName} ({item.quantity} {item.unit})</Text>
+              <TouchableOpacity onPress={() => setRecipe(recipe.filter((_, i) => i !== index))}>
+                <FontAwesome name="trash" size={20} color="#dc3545" />
+              </TouchableOpacity>
+            </View>
+          ))}
+          <RecipeInput 
+            ingredients={availableIngredients} 
+            onAdd={handleAddIngredientToRecipe} 
+          />
+        </View>
+
         <View style={styles.submitSection}>
           {loading ? (
             <ActivityIndicator size="large" color="#007bff" />
@@ -255,7 +329,6 @@ const ProductFormScreen: React.FC = () => {
   );
 };
 
-// --- Styles ---
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
@@ -384,6 +457,30 @@ const styles = StyleSheet.create({
     paddingVertical: 12, 
     borderBottomWidth: 1, 
     borderBottomColor: '#eee' 
+  },
+  recipeInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  recipePickerWrapper: {
+    flex: 1,
+    height: 45,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 8,
+    justifyContent: 'center',
+    backgroundColor: '#fafafa',
+  },
+  recipeQuantityInput: {
+    width: 80,
+    height: 45,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#fafafa'
   },
 });
 

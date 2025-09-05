@@ -8,6 +8,13 @@ export interface Modifier {
   priceAdjustment: number;
 }
 
+export interface RecipeItem {
+  ingredientId: string;
+  ingredientName: string;
+  quantity: number;
+  unit: "gram" | "ml" | "pcs";
+}
+
 export interface Product {
   id?: string;
   name: string;
@@ -16,6 +23,7 @@ export interface Product {
   imageUrl?: string;
   variants?: Variant[];
   modifiers?: Modifier[];
+  recipe?: RecipeItem[];
 }
 
 export interface Ingredient {
@@ -24,4 +32,12 @@ export interface Ingredient {
   stock: number;
   unit: "gram" | "ml" | "pcs";
   minStock: number;
+}
+
+export interface CartItem {
+  product: Product;
+  quantity: number;
+  selectedVariant?: Variant;
+  selectedModifiers?: Modifier[];
+  totalPrice: number;
 }
