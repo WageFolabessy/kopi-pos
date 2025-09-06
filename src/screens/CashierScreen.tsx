@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { getProducts } from "../api/products";
 import { CartItem, Modifier, Product, Variant } from "../types";
 
@@ -13,13 +13,34 @@ const CashierScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
+  const [categories, setCategories] = useState<string[]>(["Semua"]);
+  const [activeCategory, setActiveCategory] = useState<string>("Semua");
+
   useEffect(() => {
     const unsubscribe = getProducts((data) => {
       setProducts(data);
+      const uniqueCategories = [
+        "Semua",
+        ...Array.from(new Set(data.map((p) => p.category))),
+      ];
+      setCategories(uniqueCategories);
       setLoading(false);
     });
     return () => unsubscribe();
   }, []);
+
+  const filteredAndSortedProducts = useMemo(() => {
+    const filteredProducts = products.filter((product) => {
+      if (activeCategory === "Semua") {
+        return true;
+      }
+      return product.category === activeCategory;
+    });
+
+    return filteredProducts.sort((a, b) => {
+      return a.name.localeCompare(b.name);
+    });
+  }, [products, activeCategory]);
 
   const handleProductSelect = (product: Product) => {
     if (
@@ -38,7 +59,9 @@ const CashierScreen: React.FC = () => {
     selectedModifiers?: Modifier[]
   ) => {
     let singleItemPrice = product.price;
-    if (selectedVariant) singleItemPrice += selectedVariant.priceAdjustment;
+    if (selectedVariant) {
+      singleItemPrice += selectedVariant.priceAdjustment;
+    }
     const modifiersPrice =
       selectedModifiers?.reduce((sum, m) => sum + m.priceAdjustment, 0) || 0;
     singleItemPrice += modifiersPrice;
@@ -78,7 +101,7 @@ const CashierScreen: React.FC = () => {
         return [...prevCart, newCartItem];
       }
     });
-    setSelectedProduct(null); // Close modal after confirm
+    setSelectedProduct(null);
   };
 
   const handleUpdateQuantity = (cartItemIndex: number, amount: number) => {
@@ -90,8 +113,9 @@ const CashierScreen: React.FC = () => {
             if (newQuantity <= 0) return null;
 
             let singleItemPrice = item.product.price;
-            if (item.selectedVariant)
+            if (item.selectedVariant) {
               singleItemPrice += item.selectedVariant.priceAdjustment;
+            }
             const modifiersPrice =
               item.selectedModifiers?.reduce(
                 (sum, m) => sum + m.priceAdjustment,
@@ -112,14 +136,7 @@ const CashierScreen: React.FC = () => {
   };
 
   const handleClearCart = () => {
-    Alert.alert(
-      "Kosongkan Keranjang",
-      "Apakah Anda yakin ingin menghapus semua item dari keranjang?",
-      [
-        { text: "Batal", style: "cancel" },
-        { text: "Ya, Hapus", style: "destructive", onPress: () => setCart([]) },
-      ]
-    );
+    setCart([]);
   };
 
   if (loading) {
@@ -134,11 +151,17 @@ const CashierScreen: React.FC = () => {
         onClose={() => setSelectedProduct(null)}
         onConfirm={handleConfirmAddToCart}
       />
-      <ProductGrid products={products} onProductSelect={handleProductSelect} />
+      <ProductGrid
+        products={filteredAndSortedProducts}
+        onProductSelect={handleProductSelect}
+        categories={categories}
+        activeCategory={activeCategory}
+        onCategorySelect={setActiveCategory}
+      />
       <Cart
         cart={cart}
-        onClearCart={handleClearCart}
         onUpdateQuantity={handleUpdateQuantity}
+        onClearCart={handleClearCart}
       />
     </View>
   );

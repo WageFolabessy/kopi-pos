@@ -1,8 +1,7 @@
 import { FontAwesome } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Button,
   FlatList,
@@ -23,39 +22,39 @@ import { Ingredient } from "../types";
 
 const InventoryScreen: React.FC = () => {
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isModalVisible, setModalVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [name, setName] = useState("");
+  const [stock, setStock] = useState("");
+  const [minStock, setMinStock] = useState("");
+  const [unit, setUnit] = useState<"gram" | "ml" | "pcs">("gram");
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(
     null
   );
 
-  // Form states
-  const [name, setName] = useState("");
-  const [stock, setStock] = useState("");
-  const [unit, setUnit] = useState<"gram" | "ml" | "pcs">("gram");
-  const [minStock, setMinStock] = useState("");
-
   useEffect(() => {
-    const unsubscribe = getIngredients((data) => {
-      setIngredients(data);
-      setLoading(false);
-    });
+    const unsubscribe = getIngredients(setIngredients);
     return () => unsubscribe();
   }, []);
 
-  const openModal = (ingredient: Ingredient | null = null) => {
+  const sortedIngredients = useMemo(() => {
+    return [...ingredients].sort((a, b) => a.name.localeCompare(b.name));
+  }, [ingredients]);
+
+  const openModalToAdd = () => {
+    setEditingIngredient(null);
+    setName("");
+    setStock("");
+    setMinStock("");
+    setUnit("gram");
+    setModalVisible(true);
+  };
+
+  const openModalToEdit = (ingredient: Ingredient) => {
     setEditingIngredient(ingredient);
-    if (ingredient) {
-      setName(ingredient.name);
-      setStock(ingredient.stock.toString());
-      setUnit(ingredient.unit);
-      setMinStock(ingredient.minStock.toString());
-    } else {
-      setName("");
-      setStock("");
-      setUnit("gram");
-      setMinStock("");
-    }
+    setName(ingredient.name);
+    setStock(ingredient.stock.toString());
+    setMinStock(ingredient.minStock.toString());
+    setUnit(ingredient.unit);
     setModalVisible(true);
   };
 
@@ -64,88 +63,94 @@ const InventoryScreen: React.FC = () => {
     const minStockNum = parseFloat(minStock);
 
     if (!name || isNaN(stockNum) || isNaN(minStockNum)) {
-      Alert.alert("Error", "Semua field harus diisi dengan benar.");
+      Alert.alert("Error", "Semua kolom harus diisi dengan benar.");
       return;
     }
 
-    const ingredientData = {
-      name,
-      stock: stockNum,
-      unit,
-      minStock: minStockNum,
-    };
-
     try {
       if (editingIngredient) {
-        await updateIngredient(editingIngredient.id!, ingredientData);
+        await updateIngredient(editingIngredient.id!, {
+          name,
+          stock: stockNum,
+          minStock: minStockNum,
+          unit,
+        });
       } else {
-        await addIngredient(ingredientData);
+        await addIngredient({
+          name,
+          stock: stockNum,
+          minStock: minStockNum,
+          unit,
+        });
       }
       setModalVisible(false);
-    } catch (error) {
-      Alert.alert("Error", "Gagal menyimpan data.");
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = useCallback((id: string) => {
     Alert.alert(
-      "Hapus Bahan",
-      "Apakah Anda yakin ingin menghapus bahan baku ini?",
+      "Hapus Bahan Baku",
+      "Apakah Anda yakin ingin menghapus item ini?",
       [
         { text: "Batal", style: "cancel" },
         {
           text: "Hapus",
           style: "destructive",
-          onPress: () => deleteIngredient(id),
+          onPress: async () => {
+            try {
+              await deleteIngredient(id);
+            } catch (error: any) {
+              Alert.alert("Error", error.message);
+            }
+          },
         },
       ]
     );
-  };
+  }, []);
 
-  const renderItem = ({ item }: { item: Ingredient }) => {
-    const isLowStock = item.stock <= item.minStock;
-    return (
+  const renderItem = useCallback(
+    ({ item }: { item: Ingredient }) => (
       <View style={styles.card}>
         <View style={styles.cardContent}>
           <Text style={styles.cardTitle}>{item.name}</Text>
-          <Text style={isLowStock ? styles.stockLow : styles.stockNormal}>
+          <Text
+            style={[
+              styles.cardInfo,
+              styles.stockSufficient,
+              item.stock < item.minStock && styles.lowStock,
+            ]}
+          >
             Stok: {item.stock.toLocaleString("id-ID")} {item.unit}
           </Text>
-          <Text style={styles.minStockText}>
+          <Text style={[styles.cardInfo, styles.minStockInfo]}>
             Stok Min: {item.minStock.toLocaleString("id-ID")} {item.unit}
           </Text>
         </View>
         <View style={styles.cardActions}>
           <TouchableOpacity
             style={styles.editButton}
-            onPress={() => openModal(item)}
+            onPress={() => openModalToEdit(item)}
           >
             <FontAwesome name="pencil" size={18} color="white" />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.deleteButton}
-            onPress={() => handleDelete(item.id!)}
+            onPress={() => item.id && handleDelete(item.id)}
           >
             <FontAwesome name="trash" size={18} color="white" />
           </TouchableOpacity>
         </View>
       </View>
-    );
-  };
-
-  if (loading) {
-    return (
-      <ActivityIndicator
-        size="large"
-        style={{ flex: 1, justifyContent: "center" }}
-      />
-    );
-  }
+    ),
+    [handleDelete]
+  );
 
   return (
     <View style={styles.container}>
       <FlatList
-        data={ingredients}
+        data={sortedIngredients}
         renderItem={renderItem}
         keyExtractor={(item) => item.id!}
         contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
@@ -153,19 +158,21 @@ const InventoryScreen: React.FC = () => {
           <Text style={styles.emptyText}>Belum ada bahan baku.</Text>
         }
       />
-      <TouchableOpacity style={styles.fab} onPress={() => openModal()}>
-        <FontAwesome name="plus" size={24} color="white" />
-      </TouchableOpacity>
 
-      <Modal visible={isModalVisible} animationType="slide" transparent>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>
               {editingIngredient ? "Ubah Bahan Baku" : "Tambah Bahan Baku"}
             </Text>
             <TextInput
               style={styles.input}
-              placeholder="Nama Bahan"
+              placeholder="Nama Bahan Baku"
               value={name}
               onChangeText={setName}
             />
@@ -188,28 +195,47 @@ const InventoryScreen: React.FC = () => {
                 selectedValue={unit}
                 onValueChange={(itemValue) => setUnit(itemValue)}
               >
-                <Picker.Item label="Gram (g)" value="gram" />
-                <Picker.Item label="Mililiter (ml)" value="ml" />
-                <Picker.Item label="Pcs (pcs)" value="pcs" />
+                <Picker.Item label="gram" value="gram" />
+                <Picker.Item label="ml" value="ml" />
+                <Picker.Item label="pcs" value="pcs" />
               </Picker>
             </View>
-            <View style={styles.modalButtons}>
+            <Button
+              title={editingIngredient ? "Simpan Perubahan" : "Tambah"}
+              onPress={handleSave}
+            />
+            <View style={{ marginTop: 8 }}>
               <Button
                 title="Batal"
-                onPress={() => setModalVisible(false)}
                 color="gray"
+                onPress={() => setModalVisible(false)}
               />
-              <Button title="Simpan" onPress={handleSave} />
             </View>
           </View>
         </View>
       </Modal>
+
+      <TouchableOpacity style={styles.fab} onPress={openModalToAdd}>
+        <FontAwesome name="plus" size={24} color="white" />
+      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f0f2f5" },
+  fab: {
+    position: "absolute",
+    width: 60,
+    height: 60,
+    alignItems: "center",
+    justifyContent: "center",
+    right: 30,
+    bottom: 30,
+    backgroundColor: "#007bff",
+    borderRadius: 30,
+    elevation: 8,
+  },
   emptyText: {
     textAlign: "center",
     marginTop: 50,
@@ -224,22 +250,18 @@ const styles = StyleSheet.create({
     padding: 16,
     elevation: 3,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
     alignItems: "center",
   },
-  cardContent: { flex: 1, marginRight: 10 },
-  cardTitle: { fontSize: 18, fontWeight: "bold", color: "#333" },
-  stockNormal: { fontSize: 16, color: "green", marginVertical: 4 },
-  stockLow: {
-    fontSize: 16,
-    color: "red",
-    marginVertical: 4,
-    fontWeight: "bold",
-  },
-  minStockText: { fontSize: 14, color: "gray" },
-  cardActions: { flexDirection: "column", gap: 10 },
+  cardContent: { flex: 1 },
+  cardTitle: { fontSize: 18, fontWeight: "bold" },
+  cardInfo: { fontSize: 14, color: "#555", marginTop: 4 },
+  lowStock: { color: "#dc3545", fontWeight: "bold" },
+  stockSufficient: { color: "#28a745", fontWeight: "bold" },
+  minStockInfo: { color: "#c82333" },
+  cardActions: { flexDirection: "row", gap: 10 },
   editButton: {
     backgroundColor: "#007bff",
     padding: 12,
@@ -258,27 +280,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  fab: {
-    position: "absolute",
-    width: 60,
-    height: 60,
-    alignItems: "center",
-    justifyContent: "center",
-    right: 30,
-    bottom: 30,
-    backgroundColor: "#007bff",
-    borderRadius: 30,
-    elevation: 8,
-  },
-  // Modal Styles
-  modalContainer: {
+  modalBackdrop: {
     flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
   },
-  modalContent: {
-    width: "90%",
+  modalContainer: {
+    width: "85%",
     backgroundColor: "white",
     borderRadius: 12,
     padding: 20,
@@ -297,15 +306,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 12,
     paddingHorizontal: 16,
-    backgroundColor: "#fff",
+    backgroundColor: "#fafafa",
   },
   pickerContainer: {
     borderColor: "#ddd",
     borderWidth: 1,
     borderRadius: 8,
-    marginBottom: 20,
+    marginBottom: 16,
+    justifyContent: "center",
   },
-  modalButtons: { flexDirection: "row", justifyContent: "space-around" },
 });
 
 export default InventoryScreen;

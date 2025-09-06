@@ -2,12 +2,43 @@ import React from "react";
 import {
   FlatList,
   Image,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { Product } from "../../types";
+
+const CategoryTabs: React.FC<{
+  categories: string[];
+  activeCategory: string;
+  onSelect: (category: string) => void;
+}> = ({ categories, activeCategory, onSelect }) => (
+  <View style={styles.categoryContainer}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      {categories.map((category) => (
+        <TouchableOpacity
+          key={category}
+          style={[
+            styles.categoryButton,
+            activeCategory === category && styles.categoryButtonActive,
+          ]}
+          onPress={() => onSelect(category)}
+        >
+          <Text
+            style={[
+              styles.categoryText,
+              activeCategory === category && styles.categoryTextActive,
+            ]}
+          >
+            {category}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  </View>
+);
 
 const ProductGridItem = React.memo(
   ({
@@ -32,12 +63,28 @@ const ProductGridItem = React.memo(
   )
 );
 
-const ProductGrid: React.FC<{
+interface ProductGridProps {
   products: Product[];
   onProductSelect: (product: Product) => void;
-}> = ({ products, onProductSelect }) => {
+  categories: string[];
+  activeCategory: string;
+  onCategorySelect: (category: string) => void;
+}
+
+const ProductGrid: React.FC<ProductGridProps> = ({
+  products,
+  onProductSelect,
+  categories,
+  activeCategory,
+  onCategorySelect,
+}) => {
   return (
     <View style={styles.container}>
+      <CategoryTabs
+        categories={categories}
+        activeCategory={activeCategory}
+        onSelect={onCategorySelect}
+      />
       <FlatList
         data={products}
         renderItem={({ item }) => (
@@ -53,6 +100,31 @@ const ProductGrid: React.FC<{
 
 const styles = StyleSheet.create({
   container: { flex: 2, backgroundColor: "#f9f9f9" },
+  categoryContainer: {
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    backgroundColor: "white",
+  },
+  categoryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginHorizontal: 4,
+    backgroundColor: "#f0f0f0",
+  },
+  categoryButtonActive: {
+    backgroundColor: "#007bff",
+  },
+  categoryText: {
+    fontSize: 14,
+    color: "#333",
+  },
+  categoryTextActive: {
+    color: "white",
+    fontWeight: "bold",
+  },
   productCard: {
     flex: 1,
     margin: 8,

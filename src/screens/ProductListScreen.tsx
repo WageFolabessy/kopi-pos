@@ -1,6 +1,6 @@
 import { FontAwesome } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -21,6 +21,16 @@ const ProductListScreen: React.FC = () => {
     const unsubscribe = getProducts(setProducts);
     return () => unsubscribe();
   }, []);
+
+  const sortedProducts = useMemo(() => {
+    return [...products].sort((a, b) => {
+      const categoryComparison = a.category.localeCompare(b.category);
+      if (categoryComparison !== 0) {
+        return categoryComparison;
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }, [products]);
 
   const handleDeleteProduct = useCallback((id: string) => {
     Alert.alert(
@@ -47,7 +57,7 @@ const ProductListScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <FlatList
-        data={products}
+        data={sortedProducts}
         renderItem={({ item }) => (
           <ProductCard
             item={item}
@@ -61,6 +71,9 @@ const ProductListScreen: React.FC = () => {
         ListEmptyComponent={
           <Text style={styles.emptyText}>Belum ada produk.</Text>
         }
+        initialNumToRender={10}
+        maxToRenderPerBatch={5}
+        windowSize={10}
       />
       <TouchableOpacity
         style={styles.fab}
