@@ -68,6 +68,13 @@ export default function AppLayout() {
           href: userRole === "Pemilik" ? "/inventory" : null,
         }}
       />
+      <Tabs.Screen
+        name="developer"
+        options={{
+          title: "Developer",
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

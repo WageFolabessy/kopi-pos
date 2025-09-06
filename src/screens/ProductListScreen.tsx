@@ -1,6 +1,6 @@
 import { FontAwesome } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -22,7 +22,7 @@ const ProductListScreen: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleDeleteProduct = (id: string) => {
+  const handleDeleteProduct = useCallback((id: string) => {
     Alert.alert(
       "Hapus Produk",
       "Apakah Anda yakin ingin menghapus produk ini?",
@@ -35,11 +35,14 @@ const ProductListScreen: React.FC = () => {
         },
       ]
     );
-  };
+  }, []);
 
-  const handleEditProduct = (productId: string) => {
-    router.push({ pathname: "/products/form", params: { productId } });
-  };
+  const handleEditProduct = useCallback(
+    (productId: string) => {
+      router.push({ pathname: "/products/form", params: { productId } });
+    },
+    [router]
+  );
 
   return (
     <View style={styles.container}>

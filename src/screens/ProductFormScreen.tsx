@@ -14,29 +14,27 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { db } from "../api/firebase";
 import { getIngredients } from "../api/inventory";
 import { addProduct, updateProduct, uploadImage } from "../api/products";
-import { Ingredient, Modifier, Product, RecipeItem, Variant } from "../types";
-
-// Import komponen yang sudah dipecah
 import OptionInput from "../components/products/OptionInput";
 import RecipeInput from "../components/products/RecipeInput";
+import { Ingredient, Modifier, Product, RecipeItem, Variant } from "../types";
 
 const ProductFormScreen: React.FC = () => {
   const router = useRouter();
   const params = useLocalSearchParams<{ productId?: string }>();
   const isEditing = !!params.productId;
 
-  // States
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState<"Kopi" | "Non-Kopi" | "Makanan">(
     "Kopi"
   );
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [imageMimeType, setImageMimeType] = useState<string>("image/jpeg");
   const [variants, setVariants] = useState<Variant[]>([]);
   const [modifiers, setModifiers] = useState<Modifier[]>([]);
   const [recipe, setRecipe] = useState<RecipeItem[]>([]);
@@ -46,7 +44,6 @@ const ProductFormScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
-  // Fetch data
   useEffect(() => {
     const unsubscribeIngredients = getIngredients(setAvailableIngredients);
     const fetchProductData = async () => {
@@ -86,8 +83,9 @@ const ProductFormScreen: React.FC = () => {
       aspect: [1, 1],
       quality: 0.8,
     });
-    if (!result.canceled) {
+    if (!result.canceled && result.assets && result.assets[0]) {
       setImageUri(result.assets[0].uri);
+      setImageMimeType(result.assets[0].mimeType || "image/jpeg");
     }
   };
 
@@ -105,7 +103,7 @@ const ProductFormScreen: React.FC = () => {
     try {
       let uploadedImageUrl = imageUri || "";
       if (imageUri && imageUri.startsWith("file://")) {
-        uploadedImageUrl = await uploadImage(imageUri);
+        uploadedImageUrl = await uploadImage(imageUri, imageMimeType);
       }
       const productData = {
         name,
@@ -125,7 +123,6 @@ const ProductFormScreen: React.FC = () => {
       }
       router.back();
     } catch (error) {
-      console.error(error);
       Alert.alert("Error", "Terjadi kesalahan saat menyimpan produk.");
     } finally {
       setLoading(false);
@@ -355,7 +352,7 @@ const styles = StyleSheet.create({
   imagePreview: { width: "100%", height: "100%" },
   imagePlaceholder: { alignItems: "center" },
   imagePlaceholderText: { marginTop: 8, color: "#aaa" },
-  submitSection: { paddingHorizontal: 16, paddingTop: 0, paddingBottom: 16 },
+  submitSection: { paddingHorizontal: 16, paddingTop: 16 },
   submitButton: {
     backgroundColor: "#007bff",
     paddingVertical: 15,

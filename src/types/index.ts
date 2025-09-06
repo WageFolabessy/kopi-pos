@@ -1,43 +1,4 @@
-export interface Variant {
-  name: string;
-  priceAdjustment: number;
-}
+export * from "./cart.types";
+export * from "./inventory.types";
+export * from "./product.types";
 
-export interface Modifier {
-  name: string;
-  priceAdjustment: number;
-}
-
-export interface RecipeItem {
-  ingredientId: string;
-  ingredientName: string;
-  quantity: number;
-  unit: "gram" | "ml" | "pcs";
-}
-
-export interface Product {
-  id?: string;
-  name: string;
-  price: number;
-  category: "Kopi" | "Non-Kopi" | "Makanan";
-  imageUrl?: string;
-  variants?: Variant[];
-  modifiers?: Modifier[];
-  recipe?: RecipeItem[];
-}
-
-export interface Ingredient {
-  id?: string;
-  name: string;
-  stock: number;
-  unit: "gram" | "ml" | "pcs";
-  minStock: number;
-}
-
-export interface CartItem {
-  product: Product;
-  quantity: number;
-  selectedVariant?: Variant;
-  selectedModifiers?: Modifier[];
-  totalPrice: number;
-}

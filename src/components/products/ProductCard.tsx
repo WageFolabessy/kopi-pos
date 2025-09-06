@@ -17,7 +17,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <View style={styles.card}>
       <Image
-        source={{ uri: item.imageUrl || "https://placehold.co/80" }}
+        source={{ uri: item.imageUrl || "https://placehold.co/80x80" }}
         style={styles.cardImage}
       />
       <View style={styles.cardContent}>
@@ -55,6 +55,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
     </View>
   );
 };
+
+// --- Gunakan React.memo untuk optimalisasi ---
+export default React.memo(ProductCard);
 
 const styles = StyleSheet.create({
   card: {
@@ -96,6 +99,25 @@ const styles = StyleSheet.create({
     color: "gray",
     fontStyle: "italic",
   },
+  optionBadges: {
+    flexDirection: "row",
+    marginTop: 6,
+    flexWrap: "wrap",
+  },
+  badge: {
+    fontSize: 10,
+    color: "white",
+    backgroundColor: "#6c757d",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginRight: 6,
+    overflow: "hidden",
+    marginBottom: 4,
+  },
+  badgeRecipe: {
+    backgroundColor: "#17a2b8",
+  },
   cardActions: {
     flexDirection: "column",
     justifyContent: "center",
@@ -120,24 +142,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  optionBadges: {
-    flexDirection: "row",
-    marginTop: 6,
-    flexWrap: "wrap",
-  },
-  badge: {
-    fontSize: 10,
-    color: "white",
-    backgroundColor: "#6c757d",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    marginRight: 6,
-    overflow: "hidden",
-  },
-  badgeRecipe: {
-    backgroundColor: "#17a2b8",
-  },
 });
-
-export default ProductCard;
