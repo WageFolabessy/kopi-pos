@@ -1,10 +1,15 @@
 import {
-    collection,
-    doc,
-    runTransaction,
-    serverTimestamp,
+  collection,
+  doc,
+  getDoc,
+  onSnapshot,
+  orderBy,
+  query,
+  runTransaction,
+  serverTimestamp,
+  Timestamp,
 } from "firebase/firestore";
-import { CartItem } from "../types";
+import { CartItem, Transaction } from "../types";
 import { db } from "./firebase";
 
 export const processTransaction = async (
@@ -28,23 +33,19 @@ export const processTransaction = async (
         for (const recipeItem of item.product.recipe) {
           const ingredientRef = doc(db, "inventory", recipeItem.ingredientId);
           const ingredientDoc = await transaction.get(ingredientRef);
-
           if (!ingredientDoc.exists()) {
             throw new Error(
               `Bahan baku "${recipeItem.ingredientName}" tidak ditemukan.`
             );
           }
-
           const currentStock = ingredientDoc.data().stock;
           const requiredStock = recipeItem.quantity * item.quantity;
           const newStock = currentStock - requiredStock;
-
           if (newStock < 0) {
             throw new Error(
               `Stok untuk "${recipeItem.ingredientName}" tidak mencukupi.`
             );
           }
-
           ingredientUpdates.push({
             ref: ingredientRef,
             newStock: newStock,
@@ -62,7 +63,6 @@ export const processTransaction = async (
         category: item.product.category,
         imageUrl: item.product.imageUrl || null,
       };
-
       const sanitizedItem: any = {
         product: productSnapshot,
         quantity: item.quantity,
@@ -92,4 +92,42 @@ export const processTransaction = async (
       transaction.update(update.ref, { stock: update.newStock });
     });
   });
+};
+
+export const getTransactions = (
+  callback: (transactions: Transaction[]) => void
+) => {
+  const q = query(collection(db, "transactions"), orderBy("createdAt", "desc"));
+  return onSnapshot(q, (querySnapshot) => {
+    const transactions: Transaction[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      const createdAtTimestamp = data.createdAt as Timestamp;
+      transactions.push({
+        id: doc.id,
+        ...data,
+        createdAt: createdAtTimestamp
+          ? createdAtTimestamp.toDate()
+          : new Date(),
+      } as Transaction);
+    });
+    callback(transactions);
+  });
+};
+
+export const getTransactionById = async (
+  id: string
+): Promise<Transaction | null> => {
+  const docRef = doc(db, "transactions", id);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+    const createdAtTimestamp = data.createdAt as Timestamp;
+    return {
+      id: docSnap.id,
+      ...data,
+      createdAt: createdAtTimestamp ? createdAtTimestamp.toDate() : new Date(),
+    } as Transaction;
+  }
+  return null;
 };

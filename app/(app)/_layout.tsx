@@ -1,9 +1,9 @@
+import { useAuth } from "@/src/store/AuthContext";
 import { CashierProvider } from "@/src/store/CashierContext";
 import { FontAwesome } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
 import React from "react";
 import { ActivityIndicator, View } from "react-native";
-import { useAuth } from "../../src/store/AuthContext";
 
 const TabBarIcon = (props: {
   name: React.ComponentProps<typeof FontAwesome>["name"];
@@ -42,7 +42,7 @@ export default function AppLayout() {
           options={{
             title: "Dashboard",
             tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
-            href: userRole === "Pemilik" ? "/dashboard" : null,
+            href: (userRole === "Pemilik" ? "/dashboard" : null) as any,
           }}
         />
         <Tabs.Screen
@@ -52,6 +52,7 @@ export default function AppLayout() {
             tabBarIcon: ({ color }) => (
               <TabBarIcon name="money" color={color} />
             ),
+            href: "/cashier",
           }}
         />
         <Tabs.Screen
@@ -61,7 +62,7 @@ export default function AppLayout() {
             tabBarIcon: ({ color }) => (
               <TabBarIcon name="inbox" color={color} />
             ),
-            href: userRole === "Pemilik" ? "/products" : null,
+            href: (userRole === "Pemilik" ? "/products" : null) as any,
           }}
         />
         <Tabs.Screen
@@ -71,7 +72,17 @@ export default function AppLayout() {
             tabBarIcon: ({ color }) => (
               <TabBarIcon name="archive" color={color} />
             ),
-            href: userRole === "Pemilik" ? "/inventory" : null,
+            href: (userRole === "Pemilik" ? "/inventory" : null) as any,
+          }}
+        />
+        <Tabs.Screen
+          name="reports"
+          options={{
+            title: "Laporan",
+            tabBarIcon: ({ color }) => (
+              <TabBarIcon name="history" color={color} />
+            ),
+            href: (userRole === "Pemilik" ? "/reports" : null) as any,
           }}
         />
         <Tabs.Screen
