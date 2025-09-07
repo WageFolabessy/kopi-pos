@@ -1,34 +1,37 @@
-import { Stack, useRouter } from "expo-router";
+import "react-native-gesture-handler";
+
+import { Stack, useRouter, useSegments } from "expo-router";
 import React, { useEffect } from "react";
-import { ActivityIndicator, StatusBar, StyleSheet, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider, useAuth } from "../src/store/AuthContext";
+import { CashierProvider } from "../src/store/CashierContext";
 
 const InitialLayout = () => {
   const { user, userRole, loading } = useAuth();
+  const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    if (loading) {
-      return;
-    }
+    if (loading) return;
 
-    if (user) {
+    const inAppGroup = segments[0] === "(app)";
+
+    if (user && !inAppGroup) {
       if (userRole === "Pemilik") {
         router.replace("/dashboard");
       } else if (userRole === "Kasir") {
         router.replace("/cashier");
-      } else {
-        router.replace("/login");
       }
-    } else {
+    } else if (!user && inAppGroup) {
       router.replace("/login");
     }
-  }, [user, userRole, loading]);
+  }, [user, userRole, loading, segments]);
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#0000ff" />
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" />
       </View>
     );
   }
@@ -43,17 +46,21 @@ const InitialLayout = () => {
 
 export default function RootLayout() {
   return (
-    <>
-      <StatusBar hidden={true} />
+    <GestureHandlerRootView style={styles.container}>
       <AuthProvider>
-        <InitialLayout />
+        <CashierProvider>
+          <InitialLayout />
+        </CashierProvider>
       </AuthProvider>
-    </>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  loaderContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",

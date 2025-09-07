@@ -1,11 +1,11 @@
 import { FontAwesome } from "@expo/vector-icons";
 import React from "react";
 import {
-    FlatList,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { CartItem } from "../../types";
 
@@ -13,9 +13,17 @@ interface CartProps {
   cart: CartItem[];
   onUpdateQuantity: (index: number, amount: number) => void;
   onClearCart: () => void;
+  onPay: () => void;
+  onSave: () => void;
 }
 
-const Cart: React.FC<CartProps> = ({ cart, onUpdateQuantity, onClearCart }) => {
+const Cart: React.FC<CartProps> = ({
+  cart,
+  onUpdateQuantity,
+  onClearCart,
+  onPay,
+  onSave,
+}) => {
   const calculateTotal = () => {
     return cart.reduce((sum, item) => sum + item.totalPrice, 0);
   };
@@ -66,7 +74,6 @@ const Cart: React.FC<CartProps> = ({ cart, onUpdateQuantity, onClearCart }) => {
           </TouchableOpacity>
         )}
       </View>
-
       <FlatList
         data={cart}
         renderItem={renderCartItem}
@@ -84,9 +91,30 @@ const Cart: React.FC<CartProps> = ({ cart, onUpdateQuantity, onClearCart }) => {
             Rp {calculateTotal().toLocaleString("id-ID")}
           </Text>
         </View>
-        <TouchableOpacity style={styles.payButton} disabled={cart.length === 0}>
-          <Text style={styles.payButtonText}>Bayar</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              styles.saveButton,
+              cart.length === 0 && styles.buttonDisabled,
+            ]}
+            disabled={cart.length === 0}
+            onPress={onSave}
+          >
+            <Text style={styles.actionButtonText}>Simpan</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              styles.payButton,
+              cart.length === 0 && styles.buttonDisabled,
+            ]}
+            disabled={cart.length === 0}
+            onPress={onPay}
+          >
+            <Text style={styles.actionButtonText}>Bayar</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -140,13 +168,17 @@ const styles = StyleSheet.create({
   },
   summaryText: { fontSize: 18, color: "gray" },
   summaryTotal: { fontSize: 20, fontWeight: "bold" },
-  payButton: {
-    backgroundColor: "#007bff",
+  buttonRow: { flexDirection: "row", gap: 10 },
+  actionButton: {
+    flex: 1,
     paddingVertical: 15,
     borderRadius: 8,
     alignItems: "center",
   },
-  payButtonText: { color: "white", fontSize: 18, fontWeight: "bold" },
+  saveButton: { backgroundColor: "#ffc107" },
+  payButton: { backgroundColor: "#007bff" },
+  buttonDisabled: { backgroundColor: "#a9a9a9" },
+  actionButtonText: { color: "white", fontSize: 18, fontWeight: "bold" },
 });
 
 export default Cart;
