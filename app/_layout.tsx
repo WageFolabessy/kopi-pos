@@ -1,33 +1,34 @@
-import { Stack, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import React, { useEffect } from "react";
-import { ActivityIndicator, StatusBar, View } from "react-native";
+import { ActivityIndicator, StatusBar, StyleSheet, View } from "react-native";
 import { AuthProvider, useAuth } from "../src/store/AuthContext";
 
 const InitialLayout = () => {
   const { user, userRole, loading } = useAuth();
-  const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    if (loading) return;
+    if (loading) {
+      return;
+    }
 
-    const inAppGroup = segments[0] === "(app)";
-
-    if (user && !inAppGroup) {
+    if (user) {
       if (userRole === "Pemilik") {
         router.replace("/dashboard");
       } else if (userRole === "Kasir") {
         router.replace("/cashier");
+      } else {
+        router.replace("/login");
       }
-    } else if (!user && inAppGroup) {
+    } else {
       router.replace("/login");
     }
-  }, [user, userRole, loading, segments]);
+  }, [user, userRole, loading]);
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" />
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#0000ff" />
       </View>
     );
   }
@@ -50,3 +51,11 @@ export default function RootLayout() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});
