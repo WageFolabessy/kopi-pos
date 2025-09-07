@@ -8,6 +8,7 @@ import {
   runTransaction,
   serverTimestamp,
   Timestamp,
+  where,
 } from "firebase/firestore";
 import { CartItem, Transaction } from "../types";
 import { db } from "./firebase";
@@ -130,4 +131,48 @@ export const getTransactionById = async (
     } as Transaction;
   }
   return null;
+};
+
+export const getTodaysTransactions = (
+  callback: (transactions: Transaction[]) => void
+) => {
+  const now = new Date();
+  const startOfDay = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    0,
+    0,
+    0
+  );
+  const endOfDay = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    23,
+    59,
+    59
+  );
+
+  const q = query(
+    collection(db, "transactions"),
+    where("createdAt", ">=", startOfDay),
+    where("createdAt", "<=", endOfDay)
+  );
+
+  return onSnapshot(q, (querySnapshot) => {
+    const transactions: Transaction[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      const createdAtTimestamp = data.createdAt as Timestamp;
+      transactions.push({
+        id: doc.id,
+        ...data,
+        createdAt: createdAtTimestamp
+          ? createdAtTimestamp.toDate()
+          : new Date(),
+      } as Transaction);
+    });
+    callback(transactions);
+  });
 };
