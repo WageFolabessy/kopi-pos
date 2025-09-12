@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { closeOpenTab, createOpenTab } from "../api/openTabs";
 import { getProducts } from "../api/products";
 import { processTransaction } from "../api/transactions";
@@ -26,6 +33,9 @@ const CashierScreen: React.FC = () => {
 
   const { openTabsModalVisible, setOpenTabsModalVisible } = useCashier();
   const [currentOpenTab, setCurrentOpenTab] = useState<OpenTab | null>(null);
+
+  const { width } = useWindowDimensions();
+  const isWide = width >= 900;
 
   useEffect(() => {
     const unsubscribe = getProducts((data) => {
@@ -254,7 +264,12 @@ const CashierScreen: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        isWide ? styles.layoutRow : styles.layoutColumn,
+      ]}
+    >
       {processing && (
         <View style={styles.processingOverlay}>
           <ActivityIndicator size="large" color="white" />
@@ -288,27 +303,36 @@ const CashierScreen: React.FC = () => {
         onConfirm={handleConfirmSaveTab}
       />
 
-      <ProductGrid
-        products={filteredAndSortedProducts}
-        onProductSelect={handleProductSelect}
-        categories={categories}
-        activeCategory={activeCategory}
-        onCategorySelect={setActiveCategory}
-      />
+      <View style={isWide ? styles.leftPane : styles.pane}>
+        <ProductGrid
+          products={filteredAndSortedProducts}
+          onProductSelect={handleProductSelect}
+          categories={categories}
+          activeCategory={activeCategory}
+          onCategorySelect={setActiveCategory}
+        />
+      </View>
 
-      <Cart
-        cart={cart}
-        onUpdateQuantity={handleUpdateQuantity}
-        onClearCart={handleClearCart}
-        onPay={() => setPaymentModalVisible(true)}
-        onSave={handleSaveTab}
-      />
+      <View style={isWide ? styles.rightPane : styles.pane}>
+        <Cart
+          cart={cart}
+          onUpdateQuantity={handleUpdateQuantity}
+          onClearCart={handleClearCart}
+          onPay={() => setPaymentModalVisible(true)}
+          onSave={handleSaveTab}
+        />
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: "row", backgroundColor: "#f0f2f5" },
+  container: { flex: 1, backgroundColor: "#f0f2f5" },
+  layoutRow: { flexDirection: "row" },
+  layoutColumn: { flexDirection: "column" },
+  leftPane: { flex: 2 },
+  rightPane: { flex: 1 },
+  pane: { flex: 1 },
   loader: { flex: 1, justifyContent: "center", alignItems: "center" },
   processingOverlay: {
     ...StyleSheet.absoluteFillObject,

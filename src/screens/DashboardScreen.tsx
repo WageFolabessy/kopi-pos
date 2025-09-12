@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { auth } from "../api/firebase";
 import { getTodaysTransactions } from "../api/transactions";
@@ -19,6 +20,8 @@ const DashboardScreen: React.FC = () => {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const { width } = useWindowDimensions();
+  const isWide = width >= 768;
 
   useEffect(() => {
     const unsubscribe = getTodaysTransactions((data) => {
@@ -64,23 +67,41 @@ const DashboardScreen: React.FC = () => {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.welcomeTitle}>Selamat Datang!</Text>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[
+        styles.contentContainer,
+        isWide && styles.contentContainerWide,
+      ]}
+    >
+      <Text
+        style={[styles.welcomeTitle, isWide && styles.welcomeTitleLarge]}
+      >
+        Selamat Datang!
+      </Text>
       <Text style={styles.welcomeEmail}>{user?.email}</Text>
 
       <View style={styles.statsRow}>
-        <StatCard
-          title="Omzet Hari Ini"
-          value={`Rp ${totalRevenue.toLocaleString("id-ID")}`}
-          icon="money"
-          color="#28a745"
-        />
-        <StatCard
-          title="Transaksi Hari Ini"
-          value={totalTransactions.toString()}
-          icon="bar-chart"
-          color="#007bff"
-        />
+        <View
+          style={[styles.cardWrapper, isWide && styles.cardWrapperHalf]}
+        >
+          <StatCard
+            title="Omzet Hari Ini"
+            value={`Rp ${totalRevenue.toLocaleString("id-ID")}`}
+            icon="money"
+            color="#28a745"
+          />
+        </View>
+        <View
+          style={[styles.cardWrapper, isWide && styles.cardWrapperHalf]}
+        >
+          <StatCard
+            title="Transaksi Hari Ini"
+            value={totalTransactions.toString()}
+            icon="bar-chart"
+            color="#007bff"
+          />
+        </View>
       </View>
 
       <TopProductsList products={topProducts} />
@@ -104,6 +125,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#f0f2f5",
     padding: 16,
   },
+  contentContainer: {
+    width: "100%",
+  },
+  contentContainerWide: {
+    maxWidth: 960,
+    alignSelf: "center",
+    width: "100%",
+  },
   loaderContainer: {
     flex: 1,
     justifyContent: "center",
@@ -113,6 +142,9 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
   },
+  welcomeTitleLarge: {
+    fontSize: 28,
+  },
   welcomeEmail: {
     fontSize: 16,
     color: "gray",
@@ -120,8 +152,15 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 16,
     marginBottom: 16,
+  },
+  cardWrapper: {
+    width: "100%",
+  },
+  cardWrapperHalf: {
+    width: "48%",
   },
   devButton: {
     marginTop: 32,

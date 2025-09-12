@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from "react";
 import {
-    Alert,
-    Button,
-    Modal,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Alert,
+  Button,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
 interface PaymentModalProps {
@@ -30,6 +31,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       return null;
     }
     return paid - totalAmount;
+  }, [amountPaid, totalAmount]);
+
+  const isConfirmEnabled = useMemo(() => {
+    const paid = Number(amountPaid) || 0;
+    const total = Number(totalAmount) || 0;
+    return total > 0 && paid >= total;
   }, [amountPaid, totalAmount]);
 
   const handleConfirm = () => {
@@ -76,11 +83,18 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             </View>
           )}
           <View style={{ marginTop: 20 }}>
-            <Button
-              title="Konfirmasi Pembayaran"
+            <Pressable
               onPress={handleConfirm}
-              disabled={change === null}
-            />
+              disabled={!isConfirmEnabled}
+              style={[
+                styles.confirmButton,
+                isConfirmEnabled
+                  ? styles.confirmEnabled
+                  : styles.confirmDisabled,
+              ]}
+            >
+              <Text style={styles.confirmText}>Konfirmasi Pembayaran</Text>
+            </Pressable>
             <View style={{ marginTop: 8 }}>
               <Button title="Batal" color="gray" onPress={onClose} />
             </View>
@@ -129,6 +143,16 @@ const styles = StyleSheet.create({
     fontSize: 18,
     textAlign: "right",
   },
+  confirmButton: {
+    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    marginTop: 12,
+  },
+  confirmEnabled: { backgroundColor: "#2e7d32" },
+  confirmDisabled: { backgroundColor: "#c7c7c7" },
+  confirmText: { color: "#fff", fontWeight: "600" },
 });
 
 export default PaymentModal;

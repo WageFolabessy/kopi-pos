@@ -1,7 +1,8 @@
 import { FontAwesome } from "@expo/vector-icons";
-import React from "react";
+import React, { useMemo } from "react";
 import {
   FlatList,
+  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -64,6 +65,8 @@ const Cart: React.FC<CartProps> = ({
     </View>
   );
 
+  const hasItems = useMemo(() => (cart?.length || 0) > 0, [cart]);
+
   return (
     <View style={styles.cartContainer}>
       <View style={styles.cartHeader}>
@@ -92,28 +95,27 @@ const Cart: React.FC<CartProps> = ({
           </Text>
         </View>
         <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              styles.saveButton,
-              cart.length === 0 && styles.buttonDisabled,
-            ]}
-            disabled={cart.length === 0}
+          <Pressable
             onPress={onSave}
-          >
-            <Text style={styles.actionButtonText}>Simpan</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+            disabled={!hasItems}
             style={[
-              styles.actionButton,
-              styles.payButton,
-              cart.length === 0 && styles.buttonDisabled,
+              styles.saveButton,
+              hasItems ? styles.saveEnabled : styles.saveDisabled,
             ]}
-            disabled={cart.length === 0}
-            onPress={onPay}
           >
-            <Text style={styles.actionButtonText}>Bayar</Text>
-          </TouchableOpacity>
+            <Text style={styles.saveText}>Simpan Pesanan</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={onPay}
+            disabled={!hasItems}
+            style={[
+              styles.payButton,
+              hasItems ? styles.payEnabled : styles.payDisabled,
+            ]}
+          >
+            <Text style={styles.payText}>Bayar</Text>
+          </Pressable>
         </View>
       </View>
     </View>
@@ -169,15 +171,26 @@ const styles = StyleSheet.create({
   summaryText: { fontSize: 18, color: "gray" },
   summaryTotal: { fontSize: 20, fontWeight: "bold" },
   buttonRow: { flexDirection: "row", gap: 10 },
-  actionButton: {
-    flex: 1,
-    paddingVertical: 15,
+  saveButton: {
     borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     alignItems: "center",
+    marginTop: 8,
   },
-  saveButton: { backgroundColor: "#ffc107" },
-  payButton: { backgroundColor: "#007bff" },
-  buttonDisabled: { backgroundColor: "#a9a9a9" },
+  saveEnabled: { backgroundColor: "#1565c0" },
+  saveDisabled: { backgroundColor: "#c7c7c7" },
+  saveText: { color: "#fff", fontWeight: "600" },
+  payButton: {
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  payEnabled: { backgroundColor: "#2e7d32" },
+  payDisabled: { backgroundColor: "#c7c7c7" },
+  payText: { color: "#fff", fontWeight: "700" },
   actionButtonText: { color: "white", fontSize: 18, fontWeight: "bold" },
 });
 

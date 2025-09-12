@@ -1,13 +1,14 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
-    Button,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Button,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
 interface SaveTabModalProps {
@@ -22,6 +23,8 @@ const SaveTabModal: React.FC<SaveTabModalProps> = ({
   onConfirm,
 }) => {
   const [name, setName] = useState("");
+
+  const isValid = useMemo(() => (name || "").trim().length > 0, [name]);
 
   const handleConfirm = () => {
     if (name.trim()) {
@@ -54,11 +57,16 @@ const SaveTabModal: React.FC<SaveTabModalProps> = ({
             autoFocus
           />
           <View style={{ marginTop: 20 }}>
-            <Button
-              title="Simpan Pesanan"
+            <Pressable
               onPress={handleConfirm}
-              disabled={!name.trim()}
-            />
+              disabled={!isValid}
+              style={[
+                styles.saveButton,
+                isValid ? styles.saveEnabled : styles.saveDisabled,
+              ]}
+            >
+              <Text style={styles.saveText}>Simpan Pesanan</Text>
+            </Pressable>
             <View style={{ marginTop: 8 }}>
               <Button title="Batal" color="gray" onPress={onClose} />
             </View>
@@ -102,6 +110,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 16,
   },
+  saveButton: {
+    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    marginTop: 12,
+  },
+  saveEnabled: { backgroundColor: "#1565c0" },
+  saveDisabled: { backgroundColor: "#c7c7c7" },
+  saveText: { color: "#fff", fontWeight: "600" },
 });
 
 export default SaveTabModal;
